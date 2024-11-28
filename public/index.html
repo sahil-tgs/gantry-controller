@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gantry Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            background: #1a1a1a;
+            color: white;
+            font-family: system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            overflow-y: auto;
+            touch-action: pan-y;
+            position: relative;
+        }
+
+        .status-bar {
+            background: #1a5c1a;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-size: 18px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .status-bar.disconnected {
+            background: #5c1a1a;
+        }
+
+        .container {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            background: #222;
+            border-radius: 12px;
+            padding: 20px 15px;
+        }
+
+        .control-group h2 {
+            color: #888;
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .direction-pad {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            padding: 0 15px;
+        }
+
+        .btn {
+            aspect-ratio: 1;
+            width: 100%;
+            border: none;
+            background: #333;
+            color: white;
+            font-size: 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px;
+            touch-action: none;
+        }
+
+        .gripper-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            padding: 0 15px;
+        }
+
+        .gripper-buttons .btn {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .btn:active,
+        .btn.pressed {
+            background: #444;
+            transform: scale(0.98);
+        }
+
+        /* Adjustments for smaller screens */
+        @media (max-height: 800px) {
+            .container {
+                gap: 10px;
+                padding: 10px;
+            }
+            .control-group {
+                padding: 15px 10px;
+            }
+            .control-group h2 {
+                margin-bottom: 15px;
+                font-size: 14px;
+            }
+            .btn {
+                min-height: 70px;
+                font-size: 20px;
+            }
+            .direction-pad, .gripper-buttons {
+                gap: 10px;
+            }
+        }
+
+        /* Even smaller screens */
+        @media (max-height: 600px) {
+            .container {
+                gap: 8px;
+                padding: 8px;
+            }
+            .control-group {
+                padding: 12px 8px;
+            }
+            .btn {
+                min-height: 60px;
+                font-size: 18px;
+            }
+            .control-group h2 {
+                margin-bottom: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="status" class="status-bar disconnected">Disconnected</div>
+    <div class="container">
+        <!-- Gantry Movement -->
+        <div class="control-group">
+            <h2>Gantry Movement</h2>
+            <div class="direction-pad">
+                <button class="btn" id="gantry-left">←</button>
+                <button class="btn" id="gantry-right">→</button>
+            </div>
+        </div>
+
+        <!-- Bridge Control -->
+        <div class="control-group">
+            <h2>Bridge Control</h2>
+            <div class="direction-pad">
+                <button class="btn" id="bridge-left">←</button>
+                <button class="btn" id="bridge-right">→</button>
+            </div>
+        </div>
+
+        <!-- Lift Control -->
+        <div class="control-group">
+            <h2>Lift Control</h2>
+            <div class="direction-pad">
+                <button class="btn" id="lift-up">↑</button>
+                <button class="btn" id="lift-down">↓</button>
+            </div>
+        </div>
+
+        <!-- Turret Control -->
+        <div class="control-group">
+            <h2>Turret Control</h2>
+            <div class="direction-pad">
+                <button class="btn" id="turret-left">↶</button>
+                <button class="btn" id="turret-right">↷</button>
+            </div>
+        </div>
+
+        <!-- Gripper Control -->
+        <div class="control-group">
+            <h2>Gripper Control</h2>
+            <div class="gripper-buttons">
+                <button class="btn" id="gripper-open">OPEN</button>
+                <button class="btn" id="gripper-close">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Your existing JavaScript code remains the same
+        class GantryController {
+            constructor() {
+                this.ws = null;
+                this.activeControls = new Set();
+                this.updateInterval = null;
+                
+                this.state = {
+                    axes: {
+                        left_x: 0,
+                        left_y: 0,
+                        right_x: 0,
+                        right_y: 0
+                    },
+                    buttons: {
+                        a: false,
+                        b: false
+                    }
+                };
+
+                this.controlMapping = {
+                    'gantry-left': { axis: 'left_x', value: 1 },
+                    'gantry-right': { axis: 'left_x', value: -1 },
+                    'bridge-left': { axis: 'right_x', value: 1 },
+                    'bridge-right': { axis: 'right_x', value: -1 },
+                    'lift-up': { axis: 'right_y', value: 1 },
+                    'lift-down': { axis: 'right_y', value: -1 },
+                    'turret-left': { axis: 'left_y', value: 1 },
+                    'turret-right': { axis: 'left_y', value: -1 },
+                    'gripper-open': { button: 'a' },
+                    'gripper-close': { button: 'b' }
+                };
+
+                this.setupWebSocket();
+                this.setupControls();
+                this.startUpdateLoop();
+            }
+
+            setupWebSocket() {
+                const connect = () => {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const wsUrl = `${protocol}//${window.location.host}`;
+                    
+                    this.ws = new WebSocket(wsUrl);
+                    
+                    this.ws.onopen = () => {
+                        document.getElementById('status').className = 'status-bar';
+                        document.getElementById('status').textContent = 'Connected';
+                    };
+                    
+                    this.ws.onclose = () => {
+                        document.getElementById('status').className = 'status-bar disconnected';
+                        document.getElementById('status').textContent = 'Disconnected';
+                        setTimeout(connect, 1000);
+                    };
+                };
+                
+                connect();
+            }
+
+            setupControls() {
+                const buttons = document.querySelectorAll('.btn');
+                
+                buttons.forEach(button => {
+                    const handleStart = (e) => {
+                        e.preventDefault();
+                        button.classList.add('pressed');
+                        this.activeControls.add(button.id);
+                    };
+
+                    const handleEnd = (e) => {
+                        e.preventDefault();
+                        button.classList.remove('pressed');
+                        this.activeControls.delete(button.id);
+                    };
+
+                    // Touch events
+                    button.addEventListener('touchstart', handleStart, { passive: false });
+                    button.addEventListener('touchend', handleEnd, { passive: false });
+                    button.addEventListener('touchcancel', handleEnd, { passive: false });
+
+                    // Mouse events
+                    button.addEventListener('mousedown', handleStart);
+                    button.addEventListener('mouseup', handleEnd);
+                    button.addEventListener('mouseleave', handleEnd);
+                    button.addEventListener('contextmenu', e => e.preventDefault());
+                });
+            }
+
+            startUpdateLoop() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                }
+
+                this.updateInterval = setInterval(() => {
+                    Object.keys(this.state.axes).forEach(axis => {
+                        this.state.axes[axis] = 0;
+                    });
+                    Object.keys(this.state.buttons).forEach(button => {
+                        this.state.buttons[button] = false;
+                    });
+
+                    this.activeControls.forEach(controlId => {
+                        const mapping = this.controlMapping[controlId];
+                        if (mapping.axis) {
+                            this.state.axes[mapping.axis] = mapping.value;
+                        }
+                        if (mapping.button) {
+                            this.state.buttons[mapping.button] = true;
+                        }
+                    });
+
+                    if (this.ws?.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify(this.state));
+                    }
+                }, 16);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            new GantryController();
+        });
+    </script>
+</body>
+</html>
