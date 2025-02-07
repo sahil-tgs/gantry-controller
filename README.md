@@ -12,7 +12,8 @@ The main objective of this project is to create a control system that:
 
 # 🎥 Demo
 
-<video src="2025-02-07 23-35-05.mp4" controls></video>
+![2025-02-07 23-35-05](https://github.com/user-attachments/assets/b3d30c0d-7f7a-46b8-a4de-5a6619cfa8a9)
+
 
 ## ✨ Features
 
