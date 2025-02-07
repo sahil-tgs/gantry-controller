@@ -10,6 +10,10 @@ The main objective of this project is to create a control system that:
 - Offers precise control over multiple robot components
 - Works seamlessly across different devices and platforms
 
+# 🎥 Demo
+
+<video src="2025-02-07 23-35-05.mp4" controls></video>
+
 ## ✨ Features
 
 ### Multi-Axis Control

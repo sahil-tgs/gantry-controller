@@ -117,7 +117,7 @@ class GantryController:
     async def run(self):
         """Main control loop with WebSocket communication."""
         # uri = "ws://localhost:3000"
-        uri = "wss://gantry-controller-production.up.railway.app"
+        uri = "wss://gantry-controller.up.railway.app"
         print(f"Starting controller... Attempting to connect to {uri}")
         
         while True:
