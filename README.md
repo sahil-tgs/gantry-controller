@@ -12,11 +12,11 @@ The main objective of this project is to create a control system that:
 
 
 ## 🎥 Demo
-<div align="center">
-  <video width="100%" controls>
-    <source src="2025-02-07 23-35-05.mp4" type="video/mp4">
-  </video>
-</div>
+
+
+https://github.com/user-attachments/assets/94be487f-4f85-4986-9a65-8ba2ac6bcf3e
+
+
 
 
 ## ✨ Features
