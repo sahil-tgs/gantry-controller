@@ -66,7 +66,7 @@ https://github.com/user-attachments/assets/94be487f-4f85-4986-9a65-8ba2ac6bcf3e
 - Compression middleware
 
 ### Robot Controller
-- Python 3.x
+- Python
 - websockets library
 - Webots Controller API
 - asyncio for asynchronous operations
@@ -74,7 +74,7 @@ https://github.com/user-attachments/assets/94be487f-4f85-4986-9a65-8ba2ac6bcf3e
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.x
+- Python 
 - Node.js and npm
 - Webots robotics simulator
 - A modern web browser
